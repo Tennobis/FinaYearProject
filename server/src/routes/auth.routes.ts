@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import bcryptjs from 'bcryptjs';
-import { AuthRequest, authenticateToken, generateToken, verifyToken } from '../middleware/auth.middleware';
+import { AuthRequest, authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -105,7 +105,7 @@ router.post('/login', async (req: AuthRequest, res: Response) => {
  * GET /api/auth/verify
  * Verify JWT token
  */
-router.get('/verify', authenticateToken, (req: AuthRequest, res: Response) => {
+router.get('/verify', authMiddleware, (req: AuthRequest, res: Response) => {
   try {
     return res.status(200).json({
       valid: true,
@@ -225,7 +225,7 @@ router.post('/github', async (req: AuthRequest, res: Response) => {
  * GET /api/auth/me
  * Get current user (requires authentication)
  */
-router.get('/me', authenticateToken, (req: AuthRequest, res: Response) => {
+router.get('/me', authMiddleware, (req: AuthRequest, res: Response) => {
   try {
     const user = users.get(req.user?.email || '');
     if (!user) {
