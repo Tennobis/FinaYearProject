@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Dashboard } from '@/pages/Dashboard';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
+import EditorPage from '@/pages/EditorPage';
 
 export default function App() {
   return (
@@ -19,6 +20,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/editor"
+              element={
+                <ProtectedRoute>
+                  <EditorPage />
                 </ProtectedRoute>
               }
             />

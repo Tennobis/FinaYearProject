@@ -1,205 +1,223 @@
 import { create } from 'zustand';
-import type { editor } from 'monaco-editor';
+import { persist } from 'zustand/middleware';
 
-export interface FileState {
+export interface EditorFile {
   id: string;
   name: string;
+  path: string;
   content: string;
+  isUnsaved: boolean;
   language: string;
-  isModified: boolean;
-  isSaved: boolean;
-  lastSavedAt?: Date;
+  createdAt: number;
+  modifiedAt: number;
 }
 
 export interface EditorState {
-  // Current file
-  currentFileId: string | null;
-  files: Map<string, FileState>;
-
-  // Editor instance
-  editor: editor.IStandaloneCodeEditor | null;
-  monaco: typeof import('monaco-editor') | null;
-
-  // Settings
-  theme: 'light' | 'dark';
-  fontSize: number;
-  lineNumbers: boolean;
-  minimap: boolean;
-  wordWrap: boolean;
-  formatOnSave: boolean;
-  autoSave: boolean;
-  tabSize: number;
-  fontLigatures: boolean;
-
-  // UI state
-  isSettingsPanelOpen: boolean;
-  errorMarkers: editor.IMarker[];
-
-  // Actions
-  setCurrentFile: (fileId: string) => void;
-  addFile: (file: FileState) => void;
-  updateFileContent: (fileId: string, content: string) => void;
-  updateFileLanguage: (fileId: string, language: string) => void;
-  deleteFile: (fileId: string) => void;
-  getFile: (fileId: string) => FileState | undefined;
-  getAllFiles: () => FileState[];
-
-  // Editor actions
-  setEditorState: (state: Partial<{ editor: editor.IStandaloneCodeEditor; monaco: typeof import('monaco-editor') }>) => void;
-  getEditor: () => editor.IStandaloneCodeEditor | null;
-  getMonaco: () => typeof import('monaco-editor') | null;
-
-  // Settings actions
-  updateSettings: (settings: Partial<Omit<EditorState, 'files' | 'editor' | 'monaco' | 'errorMarkers'>>) => void;
-  setSetting: <K extends keyof EditorState>(key: K, value: EditorState[K]) => void;
-
-  // UI actions
-  setSettingsPanelOpen: (open: boolean) => void;
-  setErrorMarkers: (markers: editor.IMarker[]) => void;
-
-  // Utility
-  markFileAsModified: (fileId: string) => void;
-  markFileAsSaved: (fileId: string) => void;
+  openFiles: EditorFile[];
+  activeFileId: string;
+  selectedFileInExplorer: string | null;
+  panelSizes: { explorer: number; editor: number; preview: number };
+  showExplorer: boolean;
+  showPreview: boolean;
+  editorSettings: {
+    fontSize: number;
+    tabSize: number;
+    wordWrap: boolean;
+    minimap: boolean;
+    formatOnSave: boolean;
+  };
 }
 
-const createEditorStore = () => {
-  return create<EditorState>((set, get) => ({
-    // Initial state
-    currentFileId: null,
-    files: new Map(),
-    editor: null,
-    monaco: null,
-    theme: 'dark',
-    fontSize: 14,
-    lineNumbers: true,
-    minimap: true,
-    wordWrap: true,
-    formatOnSave: true,
-    autoSave: true,
-    tabSize: 2,
-    fontLigatures: true,
-    isSettingsPanelOpen: false,
-    errorMarkers: [],
+export interface EditorActions {
+  // File management
+  openFile: (file: EditorFile) => void;
+  closeFile: (fileId: string) => void;
+  closeAllFiles: () => void;
+  closeOtherFiles: (fileId: string) => void;
+  setActiveFile: (fileId: string) => void;
+  updateFile: (fileId: string, content: string) => void;
+  saveFile: (fileId: string) => void;
+  saveAllFiles: () => void;
+  renameFile: (fileId: string, newName: string) => void;
 
-    // File actions
-    setCurrentFile: (fileId: string) => {
-      set({ currentFileId: fileId });
-    },
+  // Panel management
+  setPanelSizes: (sizes: { explorer: number; editor: number; preview: number }) => void;
+  setShowExplorer: (show: boolean) => void;
+  setShowPreview: (show: boolean) => void;
 
-    addFile: (file: FileState) => {
-      const files = new Map(get().files);
-      files.set(file.id, file);
-      set({ files });
-    },
+  // Explorer
+  setSelectedFileInExplorer: (fileId: string | null) => void;
 
-    updateFileContent: (fileId: string, content: string) => {
-      const files = new Map(get().files);
-      const file = files.get(fileId);
-      if (file) {
-        files.set(fileId, {
-          ...file,
-          content,
-          isModified: true,
-        });
-        set({ files });
-      }
-    },
+  // Settings
+  updateEditorSetting: (key: string, value: unknown) => void;
+  resetEditorSettings: () => void;
 
-    updateFileLanguage: (fileId: string, language: string) => {
-      const files = new Map(get().files);
-      const file = files.get(fileId);
-      if (file) {
-        files.set(fileId, {
-          ...file,
-          language,
-        });
-        set({ files });
-      }
-    },
+  // Reset
+  reset: () => void;
+}
 
-    deleteFile: (fileId: string) => {
-      const files = new Map(get().files);
-      files.delete(fileId);
-      const state = get();
-      if (state.currentFileId === fileId) {
-        set({
-          files,
-          currentFileId: files.size > 0 ? files.keys().next().value : null,
-        });
-      } else {
-        set({ files });
-      }
-    },
-
-    getFile: (fileId: string) => {
-      return get().files.get(fileId);
-    },
-
-    getAllFiles: () => {
-      return Array.from(get().files.values());
-    },
-
-    // Editor actions
-    setEditorState: (editorState) => {
-      set({
-        editor: editorState.editor || null,
-        monaco: editorState.monaco || null,
-      });
-    },
-
-    getEditor: () => {
-      return get().editor;
-    },
-
-    getMonaco: () => {
-      return get().monaco;
-    },
-
-    // Settings actions
-    updateSettings: (settings) => {
-      set(settings as any);
-    },
-
-    setSetting: <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
-      set({ [key]: value } as any);
-    },
-
-    // UI actions
-    setSettingsPanelOpen: (open: boolean) => {
-      set({ isSettingsPanelOpen: open });
-    },
-
-    setErrorMarkers: (markers: editor.IMarker[]) => {
-      set({ errorMarkers: markers });
-    },
-
-    // Utility
-    markFileAsModified: (fileId: string) => {
-      const files = new Map(get().files);
-      const file = files.get(fileId);
-      if (file) {
-        files.set(fileId, {
-          ...file,
-          isModified: true,
-        });
-        set({ files });
-      }
-    },
-
-    markFileAsSaved: (fileId: string) => {
-      const files = new Map(get().files);
-      const file = files.get(fileId);
-      if (file) {
-        files.set(fileId, {
-          ...file,
-          isModified: false,
-          isSaved: true,
-          lastSavedAt: new Date(),
-        });
-        set({ files });
-      }
-    },
-  }));
+const defaultEditorSettings = {
+  fontSize: 14,
+  tabSize: 2,
+  wordWrap: false,
+  minimap: true,
+  formatOnSave: true,
 };
 
-export const useEditorStore = createEditorStore();
+const defaultPanelSizes = { explorer: 20, editor: 60, preview: 20 };
+
+export const useEditorStore = create<EditorState & EditorActions>()(
+  persist(
+    (set) => ({
+      // Initial state
+      openFiles: [],
+      activeFileId: '',
+      selectedFileInExplorer: null,
+      panelSizes: defaultPanelSizes,
+      showExplorer: true,
+      showPreview: true,
+      editorSettings: defaultEditorSettings,
+
+      // File management
+      openFile: (file: EditorFile) =>
+        set((state) => {
+          const exists = state.openFiles.find((f) => f.id === file.id);
+          if (exists) {
+            return { activeFileId: file.id };
+          }
+          return {
+            openFiles: [...state.openFiles, file],
+            activeFileId: file.id,
+          };
+        }),
+
+      closeFile: (fileId: string) =>
+        set((state) => {
+          const filtered = state.openFiles.filter((f) => f.id !== fileId);
+          return {
+            openFiles: filtered,
+            activeFileId:
+              state.activeFileId === fileId
+                ? filtered.length > 0
+                  ? filtered[0].id
+                  : ''
+                : state.activeFileId,
+          };
+        }),
+
+      closeAllFiles: () =>
+        set({
+          openFiles: [],
+          activeFileId: '',
+        }),
+
+      closeOtherFiles: (fileId: string) =>
+        set((state) => {
+          const file = state.openFiles.find((f) => f.id === fileId);
+          if (file) {
+            return {
+              openFiles: [file],
+              activeFileId: file.id,
+            };
+          }
+          return {};
+        }),
+
+      setActiveFile: (fileId: string) =>
+        set((state) => {
+          if (state.openFiles.some((f) => f.id === fileId)) {
+            return { activeFileId: fileId };
+          }
+          return {};
+        }),
+
+      updateFile: (fileId: string, content: string) =>
+        set((state) => ({
+          openFiles: state.openFiles.map((f) =>
+            f.id === fileId
+              ? { ...f, content, isUnsaved: true, modifiedAt: Date.now() }
+              : f
+          ),
+        })),
+
+      saveFile: (fileId: string) =>
+        set((state) => ({
+          openFiles: state.openFiles.map((f) =>
+            f.id === fileId ? { ...f, isUnsaved: false } : f
+          ),
+        })),
+
+      saveAllFiles: () =>
+        set((state) => ({
+          openFiles: state.openFiles.map((f) => ({
+            ...f,
+            isUnsaved: false,
+          })),
+        })),
+
+      renameFile: (fileId: string, newName: string) =>
+        set((state) => ({
+          openFiles: state.openFiles.map((f) =>
+            f.id === fileId ? { ...f, name: newName } : f
+          ),
+        })),
+
+      // Panel management
+      setPanelSizes: (sizes) =>
+        set({
+          panelSizes: sizes,
+        }),
+
+      setShowExplorer: (show) =>
+        set({
+          showExplorer: show,
+        }),
+
+      setShowPreview: (show) =>
+        set({
+          showPreview: show,
+        }),
+
+      // Explorer
+      setSelectedFileInExplorer: (fileId) =>
+        set({
+          selectedFileInExplorer: fileId,
+        }),
+
+      // Settings
+      updateEditorSetting: (key, value) =>
+        set((state) => ({
+          editorSettings: {
+            ...state.editorSettings,
+            [key]: value,
+          },
+        })),
+
+      resetEditorSettings: () =>
+        set({
+          editorSettings: defaultEditorSettings,
+        }),
+
+      // Reset
+      reset: () =>
+        set({
+          openFiles: [],
+          activeFileId: '',
+          selectedFileInExplorer: null,
+          panelSizes: defaultPanelSizes,
+          showExplorer: true,
+          showPreview: true,
+          editorSettings: defaultEditorSettings,
+        }),
+    }),
+    {
+      name: 'editor-store',
+      partialize: (state) => ({
+        panelSizes: state.panelSizes,
+        showExplorer: state.showExplorer,
+        showPreview: state.showPreview,
+        editorSettings: state.editorSettings,
+      }),
+    }
+  )
+);
