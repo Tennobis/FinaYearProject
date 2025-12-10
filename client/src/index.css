@@ -12,8 +12,9 @@
     --secondary-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    --input: 0 0% 89.8%;
+    --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
+    --input: 0 0% 89.8%;
     --accent: 0 0% 9%;
     --accent-foreground: 0 0% 100%;
   }
@@ -29,17 +30,19 @@
     --secondary-foreground: 0 0% 98.2%;
     --destructive: 0 86% 97.3%;
     --destructive-foreground: 0 84.2% 60.2%;
-    --input: 0 0% 20%;
+    --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
+    --input: 0 0% 20%;
     --accent: 0 0% 98.2%;
     --accent-foreground: 0 0% 9%;
   }
 
   * {
-    @apply border-inherit;
+    border-color: inherit;
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 }

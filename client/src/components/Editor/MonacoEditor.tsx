@@ -26,7 +26,7 @@ export const MonacoEditor = ({
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof import('monaco-editor')>();
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>();
-  const { setEditorState } = useEditorStore();
+  useEditorStore();
 
   const handleBeforeMount: BeforeMount = (monaco) => {
     monacoRef.current = monaco;
@@ -36,10 +36,8 @@ export const MonacoEditor = ({
 
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
-    setEditorState({
-      editor,
-      monaco,
-    });
+    // Store editor and monaco refs for use in other functions
+    monacoRef.current = monaco;
 
     // Focus editor
     editor.focus();

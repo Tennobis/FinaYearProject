@@ -18,8 +18,8 @@ export const DEFAULT_EDITOR_OPTIONS: editor.IStandaloneEditorConstructionOptions
   renderWhitespace: 'selection',
   bracketPairColorization: {
     enabled: true,
-  },
-  'bracketPairColorization.independentColorPoolPerBracketType': true,
+    independentColorPoolPerBracketType: true,
+  } as any,
 };
 
 export const LANGUAGE_EXTENSIONS: Record<string, string> = {

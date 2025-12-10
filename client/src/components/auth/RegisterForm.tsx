@@ -5,6 +5,8 @@ import { Label } from '@/components/ui/Label';
 import { useAuth } from '@/contexts/AuthContext';
 import { Github, Mail } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 interface RegisterFormProps {
   onSuccess?: () => void;
 }
@@ -16,7 +18,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { register, loginWithGoogle, loginWithGithub } = useAuth();
+  const { register } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +59,14 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const handleGoogleSignup = async () => {
     setError('');
     try {
-      alert('Google signup not yet configured');
+      // Fetch OAuth URLs from backend
+      const response = await fetch(`${API_BASE_URL}/auth/oauth-urls`);
+      if (!response.ok) {
+        throw new Error('Failed to get OAuth URLs');
+      }
+      const { google } = await response.json();
+      // Redirect to Google OAuth
+      window.location.href = google;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google signup failed');
     }
@@ -66,7 +75,14 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const handleGithubSignup = async () => {
     setError('');
     try {
-      alert('GitHub signup not yet configured');
+      // Fetch OAuth URLs from backend
+      const response = await fetch(`${API_BASE_URL}/auth/oauth-urls`);
+      if (!response.ok) {
+        throw new Error('Failed to get OAuth URLs');
+      }
+      const { github } = await response.json();
+      // Redirect to GitHub OAuth
+      window.location.href = github;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'GitHub signup failed');
     }

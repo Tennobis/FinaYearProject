@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ResizableHandle,
   ResizablePanel,
@@ -6,9 +6,6 @@ import {
 } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/Button';
 import {
-  ChevronLeft,
-  ChevronRight,
-  Code2,
   Terminal,
   FileText,
 } from 'lucide-react';

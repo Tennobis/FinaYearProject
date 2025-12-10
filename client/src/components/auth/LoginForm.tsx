@@ -5,6 +5,8 @@ import { Label } from '@/components/ui/Label';
 import { useAuth } from '@/contexts/AuthContext';
 import { Github, Mail } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 interface LoginFormProps {
   onSuccess?: () => void;
 }
@@ -14,7 +16,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, loginWithGoogle, loginWithGithub } = useAuth();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,9 +47,14 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const handleGoogleLogin = async () => {
     setError('');
     try {
-      // In a real app, you would use a Google OAuth library like @react-oauth/google
-      // This is a placeholder for the OAuth flow
-      alert('Google login not yet configured');
+      // Fetch OAuth URLs from backend
+      const response = await fetch(`${API_BASE_URL}/auth/oauth-urls`);
+      if (!response.ok) {
+        throw new Error('Failed to get OAuth URLs');
+      }
+      const { google } = await response.json();
+      // Redirect to Google OAuth
+      window.location.href = google;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google login failed');
     }
@@ -56,8 +63,14 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const handleGithubLogin = async () => {
     setError('');
     try {
-      // In a real app, you would implement GitHub OAuth flow
-      alert('GitHub login not yet configured');
+      // Fetch OAuth URLs from backend
+      const response = await fetch(`${API_BASE_URL}/auth/oauth-urls`);
+      if (!response.ok) {
+        throw new Error('Failed to get OAuth URLs');
+      }
+      const { github } = await response.json();
+      // Redirect to GitHub OAuth
+      window.location.href = github;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'GitHub login failed');
     }

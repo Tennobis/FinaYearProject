@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 /**
  * Login Page with OAuth Options
  * Fetches OAuth URLs from backend and provides login buttons
  */
 export default function AuthLogin() {
-  const navigate = useNavigate();
   const [oauthUrls, setOauthUrls] = useState<{ google: string; github: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

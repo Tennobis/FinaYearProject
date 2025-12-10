@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   ChevronRight,
   ChevronDown,
   Folder,
   FolderOpen,
-  File,
   FileText,
   Search,
   Plus,
@@ -176,6 +175,21 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect }) => {
     const isExpanded = expanded.has(node.id);
     const hasChildren = node.type === 'folder' && node.children && node.children.length > 0;
 
+    const handleClick = () => {
+      if (node.type === 'file') {
+        onFileSelect({
+          id: node.id,
+          name: node.name,
+          path: node.path,
+          content: '',
+          language: node.language || 'plaintext',
+          isUnsaved: false,
+        });
+      } else {
+        toggleExpanded(node.id);
+      }
+    };
+
     return (
       <div key={node.id}>
         <div
@@ -184,6 +198,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect }) => {
             'text-slate-300 hover:text-slate-50'
           )}
           style={{ paddingLeft: `${12 + level * 16}px` }}
+          onClick={handleClick}
         >
           {node.type === 'folder' && (
             <Button
