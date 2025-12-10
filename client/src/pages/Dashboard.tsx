@@ -46,7 +46,7 @@ export function Dashboard() {
 
   // Filter projects
   const filteredProjects = projects.filter((project) => {
-    const matchesSearch = project.name
+    const matchesSearch = project.title
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesTemplate =
@@ -71,7 +71,7 @@ export function Dashboard() {
   const handleCloneProject = async (project: Project) => {
     const cloneName = prompt(
       'Enter name for cloned project:',
-      `${project.name} (Copy)`
+      `${project.title} (Copy)`
     );
     if (cloneName && cloneName.trim()) {
       try {

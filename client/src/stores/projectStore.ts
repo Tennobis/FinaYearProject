@@ -3,11 +3,12 @@ import axios from 'axios';
 
 export interface Project {
   id: string;
-  name: string;
-  description: string;
-  template: 'react' | 'nextjs' | 'express' | 'vue' | 'svelte';
+  title: string;
+  description: string | null;
+  template: string;
   createdAt: string;
   updatedAt: string;
+  userId?: string;
 }
 
 interface ProjectState {
@@ -17,7 +18,7 @@ interface ProjectState {
   
   // Actions
   fetchProjects: () => Promise<void>;
-  createProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Project>;
+  createProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<Project>;
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   cloneProject: (id: string, newName: string) => Promise<Project>;
@@ -34,7 +35,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const response = await axios.get(`${API_URL}/projects`);
-      set({ projects: response.data, loading: false });
+      // Handle paginated response from backend
+      const projects = response.data.data || response.data;
+      set({ projects: Array.isArray(projects) ? projects : [], loading: false });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch projects';
       set({ error: message, loading: false });
@@ -127,7 +130,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   cloneProject: async (id, newName) => {
     try {
       const response = await axios.post(`${API_URL}/projects/${id}/clone`, {
-        name: newName,
+        title: newName,
       });
       const clonedProject = response.data;
 

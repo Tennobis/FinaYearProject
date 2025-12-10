@@ -27,7 +27,7 @@ export function ProjectCard({
   onClone,
   onDelete,
 }: ProjectCardProps) {
-  const TemplateIcon = TEMPLATE_ICONS[project.template];
+  const TemplateIcon = TEMPLATE_ICONS[project.template] || TEMPLATE_ICONS['react'];
 
   return (
     <Card className="group relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer">
@@ -40,7 +40,7 @@ export function ProjectCard({
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-slate-900 truncate hover:text-blue-600 transition-colors">
-              {project.name}
+              {project.title}
             </h3>
             <p className="text-xs text-slate-500 capitalize">{project.template}</p>
           </div>
