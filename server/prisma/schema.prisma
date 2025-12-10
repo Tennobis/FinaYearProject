@@ -19,13 +19,13 @@ enum UserRole {
 }
 
 model User {
-  id           String    @id @default(cuid()) @map("_id")
-  name         String?
-  email        String    @unique
-  password     String?   // Optional for OAuth users
-  image        String?
-  accounts     Account[]
-  role         UserRole  @default(USER)
+  id            String    @id @default(cuid()) @map("_id")
+  name          String?
+  email         String    @unique
+  password      String? // Optional for OAuth users
+  image         String?
+  accounts      Account[]
+  role          UserRole  @default(USER)
   emailVerified Boolean   @default(false)
 
   myPlayground StarMark[]
@@ -111,5 +111,4 @@ model ChatMessage {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-
 }

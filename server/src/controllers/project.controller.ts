@@ -1,9 +1,8 @@
 import { Response } from 'express';
-import { PrismaClient, Templates } from '@prisma/client';
+import { Templates } from '@prisma/client';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { generateTemplateFiles } from '../utils/templates';
-
-const prisma = new PrismaClient();
+import prisma from '../config/prisma';
 
 interface PaginationQuery {
   page?: string;
