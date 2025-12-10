@@ -48,7 +48,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     setError('');
     try {
       // Fetch OAuth URLs from backend
-      const response = await fetch(`${API_BASE_URL}/auth/oauth-urls`);
+      const response = await fetch(`${API_BASE_URL}/auth/oauth-urls`, {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error('Failed to get OAuth URLs');
       }
@@ -64,7 +66,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     setError('');
     try {
       // Fetch OAuth URLs from backend
-      const response = await fetch(`${API_BASE_URL}/auth/oauth-urls`);
+      const response = await fetch(`${API_BASE_URL}/auth/oauth-urls`, {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error('Failed to get OAuth URLs');
       }
