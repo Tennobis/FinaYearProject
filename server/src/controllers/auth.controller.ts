@@ -331,3 +331,14 @@ export const getCurrentUser = async (req: AuthRequest, res: Response): Promise<v
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Logout user
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // For JWT-based auth, client-side token removal is sufficient.
+    // If using cookies, clear them here.
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Logout failed" });
+  }
+};

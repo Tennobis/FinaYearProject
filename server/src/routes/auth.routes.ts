@@ -14,16 +14,20 @@ import prisma from '../config/prisma';
 
 const router = Router();
 
-// OAuth configuration from environment
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5001/api/auth/callback/google';
+// Helper to get env vars reliably
+const getGoogleConfig = () => ({
+  clientId: process.env.GOOGLE_CLIENT_ID || '',
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+  redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5001/api/auth/callback/google'
+});
 
-const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || '';
-const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '';
-const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI || 'http://localhost:5001/api/auth/callback/github';
+const getGithubConfig = () => ({
+  clientId: process.env.GITHUB_CLIENT_ID || '',
+  clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+  redirectUri: process.env.GITHUB_REDIRECT_URI || 'http://localhost:5001/api/auth/callback/github'
+});
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const getFrontendUrl = () => process.env.FRONTEND_URL || 'http://localhost:5173';
 
 /**
  * GET /api/auth/oauth-urls
@@ -31,12 +35,16 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
  */
 router.get('/oauth-urls', (req, res) => {
   try {
-    if (!GOOGLE_CLIENT_ID || !GITHUB_CLIENT_ID) {
+    const google = getGoogleConfig();
+    const github = getGithubConfig();
+
+    if (!google.clientId || !github.clientId) {
+      console.error('OAuth configuration missing:', { google: !!google.clientId, github: !!github.clientId });
       return res.status(500).json({ message: 'OAuth not configured' });
     }
 
-    const googleAuthUrl = getGoogleAuthUrl(GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI);
-    const githubAuthUrl = getGithubAuthUrl(GITHUB_CLIENT_ID, GITHUB_REDIRECT_URI);
+    const googleAuthUrl = getGoogleAuthUrl(google.clientId, google.redirectUri);
+    const githubAuthUrl = getGithubAuthUrl(github.clientId, github.redirectUri);
 
     return res.status(200).json({
       google: googleAuthUrl,
@@ -53,22 +61,31 @@ router.get('/oauth-urls', (req, res) => {
  * Google OAuth callback
  */
 router.get('/callback/google', async (req: AuthRequest, res: Response) => {
+  const frontendUrl = getFrontendUrl();
+  const config = getGoogleConfig();
+  
   try {
     const { code } = req.query;
+    console.log('Google callback received with code:', code ? 'present' : 'missing');
 
     if (!code || typeof code !== 'string') {
-      return res.redirect(`${FRONTEND_URL}/auth/error?message=No code provided`);
+      return res.redirect(`${frontendUrl}/auth/error?message=No code provided`);
     }
 
     // Exchange code for tokens
-    const tokenData = await exchangeGoogleCode(code, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
+    console.log('Exchanging Google code for tokens...');
+    const tokenData = await exchangeGoogleCode(code, config.clientId, config.clientSecret, config.redirectUri);
+    
+    console.log('Fetching Google user profile...');
     const profile = await getGoogleUserProfile(tokenData.access_token);
 
     if (!profile.email) {
-      return res.redirect(`${FRONTEND_URL}/auth/error?message=No email provided by Google`);
+      console.error('No email in Google profile');
+      return res.redirect(`${frontendUrl}/auth/error?message=No email provided by Google`);
     }
 
     // Find or create user
+    console.log('Syncing user with database:', profile.email);
     let user = await prisma.user.findUnique({
       where: { email: profile.email },
     });
@@ -79,9 +96,9 @@ router.get('/callback/google', async (req: AuthRequest, res: Response) => {
           email: profile.email,
           name: profile.name || null,
           image: profile.picture || null,
-          emailVerified: true,
         },
       });
+      console.log('Created new user:', user.id);
     }
 
     // Upsert account
@@ -119,10 +136,11 @@ router.get('/callback/google', async (req: AuthRequest, res: Response) => {
       name: user.name,
     }));
 
-    return res.redirect(`${FRONTEND_URL}/auth/callback?token=${accessToken}&refreshToken=${refreshToken}&user=${userJson}`);
+    console.log('Authentication successful, redirecting to frontend');
+    return res.redirect(`${frontendUrl}/auth/callback?token=${accessToken}&refreshToken=${refreshToken}&user=${userJson}`);
   } catch (error) {
     console.error('Google callback error:', error);
-    return res.redirect(`${FRONTEND_URL}/auth/error?message=Authentication failed`);
+    return res.redirect(`${frontendUrl}/auth/error?message=Authentication failed`);
   }
 });
 
@@ -131,15 +149,22 @@ router.get('/callback/google', async (req: AuthRequest, res: Response) => {
  * GitHub OAuth callback
  */
 router.get('/callback/github', async (req: AuthRequest, res: Response) => {
+  const frontendUrl = getFrontendUrl();
+  const config = getGithubConfig();
+
   try {
     const { code } = req.query;
+    console.log('GitHub callback received with code:', code ? 'present' : 'missing');
 
     if (!code || typeof code !== 'string') {
-      return res.redirect(`${FRONTEND_URL}/auth/error?message=No code provided`);
+      return res.redirect(`${frontendUrl}/auth/error?message=No code provided`);
     }
 
     // Exchange code for tokens
-    const tokenData = await exchangeGithubCode(code, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET);
+    console.log('Exchanging GitHub code for tokens...');
+    const tokenData = await exchangeGithubCode(code, config.clientId, config.clientSecret);
+    
+    console.log('Fetching GitHub user profile...');
     const profile = await getGithubUserProfile(tokenData.access_token);
 
     let email = profile.email;
@@ -148,10 +173,12 @@ router.get('/callback/github', async (req: AuthRequest, res: Response) => {
     }
 
     if (!email) {
-      return res.redirect(`${FRONTEND_URL}/auth/error?message=No email provided by GitHub`);
+      console.error('No email in GitHub profile');
+      return res.redirect(`${frontendUrl}/auth/error?message=No email provided by GitHub`);
     }
 
     // Find or create user
+    console.log('Syncing user with database:', email);
     let user = await prisma.user.findUnique({
       where: { email },
     });
@@ -162,9 +189,9 @@ router.get('/callback/github', async (req: AuthRequest, res: Response) => {
           email,
           name: profile.name || profile.login,
           image: profile.avatar_url || null,
-          emailVerified: true,
         },
       });
+      console.log('Created new user:', user.id);
     }
 
     // Upsert account
@@ -198,10 +225,11 @@ router.get('/callback/github', async (req: AuthRequest, res: Response) => {
       name: user.name,
     }));
 
-    return res.redirect(`${FRONTEND_URL}/auth/callback?token=${accessToken}&refreshToken=${refreshToken}&user=${userJson}`);
+    console.log('Authentication successful, redirecting to frontend');
+    return res.redirect(`${frontendUrl}/auth/callback?token=${accessToken}&refreshToken=${refreshToken}&user=${userJson}`);
   } catch (error) {
     console.error('GitHub callback error:', error);
-    return res.redirect(`${FRONTEND_URL}/auth/error?message=Authentication failed`);
+    return res.redirect(`${frontendUrl}/auth/error?message=Authentication failed`);
   }
 });
 
@@ -231,6 +259,9 @@ router.get('/me', authMiddleware, authController.getCurrentUser);
 
 // Refresh token route
 router.post('/refresh-token', authController.refreshToken);
+
+// Logout route
+router.post('/logout', authController.logout);
 
 // POST routes for frontend-managed OAuth
 router.post('/google', authController.googleAuth);

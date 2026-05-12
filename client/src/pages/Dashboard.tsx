@@ -25,9 +25,11 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { Plus, Grid3x3, List, Moon, Sun, LogOut, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const projects = useProjectStore((state) => state.projects);
   const loading = useProjectStore((state) => state.loading);
   const fetchProjects = useProjectStore((state) => state.fetchProjects);
@@ -128,7 +130,10 @@ export function Dashboard() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem>Profile</DropdownMenuItem>
                     <DropdownMenuItem>Settings</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/auth/login')}>
+                    <DropdownMenuItem onSelect={() => {
+                      logout();
+                      navigate('/login');
+                    }}>
                       <LogOut className="h-4 w-4 mr-2" />
                       Logout
                     </DropdownMenuItem>
