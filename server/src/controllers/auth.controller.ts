@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../utils/jwt.util";
 import {
@@ -7,16 +6,12 @@ import {
   loginSchema,
   oauthSchema,
   refreshTokenSchema,
-  RegisterInput,
-  LoginInput,
-  OAuthInput,
-  RefreshTokenInput,
 } from "../utils/validation.util";
 import { AuthRequest } from "../middlewares/auth.middleware";
-
-const prisma = new PrismaClient();
+import prisma from "../config/prisma";
 
 interface AuthResponse {
+  token: string;
   accessToken: string;
   refreshToken: string;
   user: {
@@ -52,7 +47,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         email: input.email,
         password: hashedPassword,
         name: input.name || null,
-        emailVerified: true, // Set to true for now, implement email verification later
+        // emailVerified: true, // Set to true for now, implement email verification later
       },
     });
 
@@ -61,6 +56,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const refreshToken = generateRefreshToken(user.id, user.email);
 
     const response: AuthResponse = {
+      token: accessToken,
       accessToken,
       refreshToken,
       user: {
@@ -110,6 +106,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const refreshToken = generateRefreshToken(user.id, user.email);
 
     const response: AuthResponse = {
+      token: accessToken,
       accessToken,
       refreshToken,
       user: {
@@ -150,7 +147,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
           email: input.email,
           name: input.name || null,
           image: input.image || null,
-          emailVerified: true,
+          // emailVerified: true,
         },
       });
     }
@@ -177,6 +174,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
     const refreshToken = generateRefreshToken(user.id, user.email);
 
     const response: AuthResponse = {
+      token: accessToken,
       accessToken,
       refreshToken,
       user: {
@@ -217,7 +215,7 @@ export const githubAuth = async (req: Request, res: Response): Promise<void> => 
           email: input.email,
           name: input.name || null,
           image: input.image || null,
-          emailVerified: true,
+          // emailVerified: true,
         },
       });
     }
@@ -244,6 +242,7 @@ export const githubAuth = async (req: Request, res: Response): Promise<void> => 
     const refreshToken = generateRefreshToken(user.id, user.email);
 
     const response: AuthResponse = {
+      token: accessToken,
       accessToken,
       refreshToken,
       user: {
@@ -313,7 +312,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response): Promise<v
         name: true,
         image: true,
         role: true,
-        emailVerified: true,
+        // emailVerified: true,
         createdAt: true,
       },
     });
